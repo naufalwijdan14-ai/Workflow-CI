@@ -16,20 +16,23 @@ from prometheus_client import start_http_server, Gauge
 accuracy_gauge = Gauge('model_accuracy_score', 'Akurasi dari model yang dilatih')
 
 def train_model():
-    # Parsing argumen agar bisa menerima input path data
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str, required=True)
     args = parser.parse_args()
 
-    # Load dataset
+    print(f"Direktori aktif saat ini: {os.getcwd()}")
+    print(f"Mencari file di: {os.path.abspath(args.data_path)}")
+
     if not os.path.exists(args.data_path):
+        # Print semua file 
+        print(f"Isi folder saat ini: {os.listdir('.')}")
         raise FileNotFoundError(f"File tidak ditemukan: {args.data_path}")
         
     data = pd.read_csv(args.data_path)
     X = data.iloc[:, :-1]
     y = data.iloc[:, -1]
 
-    # Preprocessing sederhana (Label Encoding untuk kolom teks)
+    # Preprocessing sederhana 
     for col in X.select_dtypes(include=['object']).columns:
         le = LabelEncoder()
         X[col] = le.fit_transform(X[col])
@@ -66,6 +69,5 @@ if __name__ == "__main__":
     
     train_model()
     
-    # Memberi waktu server Prometheus agar bisa dibaca (opsional di CI)
     print("Sinkronisasi Prometheus (5 detik)...")
     time.sleep(5)
