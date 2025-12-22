@@ -27,11 +27,14 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_TOKEN }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          # URI Tracking dari DagsHub temanmu
+          MLFLOW_TRACKING_URI: https://dagshub.com/naufalwijdan14-ai/Eksperimen_SML_Muhamad-Naufal-Wijdan.mlflow
         run: |
-          # Create DagsHub config directory and inject token directly into the client
+          # FIX: Suntikkan token ke folder home runner agar DagsHub tidak minta login browser
           mkdir -p ~/.dagshub
           echo "{\"token\": \"${{ secrets.DAGSHUB_TOKEN }}\"}" > ~/.dagshub/tokens
           
+          # Masuk ke folder project dan jalankan MLflow
           cd MLProject
           mlflow run . -P n_estimators=100 --env-manager local
 
@@ -45,9 +48,10 @@ jobs:
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_TOKEN }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_URI: https://dagshub.com/naufalwijdan14-ai/Eksperimen_SML_Muhamad-Naufal-Wijdan.mlflow
         run: |
-          # Build image dari model yang baru dilatih (Registered Model)
+          # Build image menggunakan model 'latest' yang baru saja di-register
           mlflow models build-docker -m "models:/Titanic_Project/latest" -n "${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest" --enable-mlserver
           
-          # Push ke Docker Hub
+          # Push ke Docker Hub (Syarat Nilai Advance)
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
