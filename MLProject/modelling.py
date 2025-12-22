@@ -1,8 +1,9 @@
+import argparse
 import pandas as pd
 import mlflow
 import mlflow.sklearn
+import joblib
 import os
-import argparse
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -13,8 +14,8 @@ parser.add_argument("--n_estimators", type=int, default=100)
 parser.add_argument("--max_depth", type=int, default=5)
 args = parser.parse_args()
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(base_dir, "titanic_preprocessing.csv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(BASE_DIR, "titanic_preprocessing.csv")
 
 df = pd.read_csv(data_path)
 
@@ -25,28 +26,22 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-with mlflow.start_run(
-    experiment_id="2",
-    run_name="CI_Automated_Run"
-):
+with mlflow.start_run(run_name="CI_Automated_Run"):
     model = RandomForestClassifier(
         n_estimators=args.n_estimators,
         max_depth=args.max_depth,
         random_state=42
     )
-    model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
+    model.fit(X_train, y_train)
+    acc = accuracy_score(y_test, model.predict(X_test))
 
     mlflow.log_param("n_estimators", args.n_estimators)
     mlflow.log_param("max_depth", args.max_depth)
     mlflow.log_metric("accuracy", acc)
 
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model",
-        registered_model_name="Titanic_Project"
-    )
+    mlflow.sklearn.log_model(model, "model")
 
-    print(f"Accuracy: {acc:.4f}")
+    joblib.dump(model, "model.pkl")
+
+    print(f"Accuracy: {acc}")
