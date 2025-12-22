@@ -29,9 +29,8 @@ jobs:
       - name: Run MLflow Training
         run: |
           cd MLProject
-          # Menggunakan SQLite lokal untuk runner ini
           export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
-          # Menjalankan training melalui MLflow CLI
+          # Tambahkan -P data_path secara eksplisit
           mlflow run . -P data_path=${{ env.DATA_PATH }} --env-manager local
 
       - name: Upload Training Artifact
