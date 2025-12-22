@@ -6,55 +6,40 @@ on:
   pull_request:
 
 jobs:
-  mlflow-ci-docker:
+  mlflow-ci:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
-          pip install mlflow dagshub pandas scikit-learn joblib mlserver mlserver-mlflow
+          pip install mlflow pandas scikit-learn joblib
 
-      - name: Run Training with MLflow
-        env:
-       
-          MLFLOW_TRACKING_USERNAME: naufalwijdan14-ai
-         
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-      
-          MLFLOW_TRACKING_URI: https://dagshub.com/naufalwijdan14-ai/Eksperimen_SML_Muhamad-Naufal-Wijdan.mlflow
+      - name: Run MLflow Training (LOCAL)
         run: |
-          # Suntikkan token ke sistem file runner
-          mkdir -p ~/.dagshub
-          echo "{\"token\": \"${{ secrets.DAGSHUB_TOKEN }}\"}" > ~/.dagshub/tokens
-          
           cd MLProject
-          python modelling.py --n_estimators 100 --max_depth 5
+          export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
+          python modelling.py
 
-      - name: Login to Docker Hub
+      - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
-          username: naufalwijdan14 
+          username: naufalwijdan14
           password: ${{ secrets.NAUFALWIJDAN }}
 
-      - name: Build and Push Docker Image
-        env:
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_TOKEN }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-          MLFLOW_TRACKING_URI: https://dagshub.com/naufalwijdan14-ai/Eksperimen_SML_Muhamad-Naufal-Wijdan.mlflow
+      - name: Build & Push Docker
         run: |
-          # Build Docker menggunakan model yang sudah ter-register 'Titanic_Project'
+          cd MLProject
+          MODEL_PATH=$(find mlruns -name model -type d | head -n 1)
+
           mlflow models build-docker \
-            -m "models:/Titanic_Project/latest" \
-            -n "naufalwijdan14/titanic-model:latest" \
-            --enable-mlserver
-          
-          # Push ke Docker Hub
+            -m "$MODEL_PATH" \
+            -n naufalwijdan14/titanic-model:latest \
+            --install-mlflow
+
           docker push naufalwijdan14/titanic-model:latest
