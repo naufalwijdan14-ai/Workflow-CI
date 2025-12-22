@@ -27,14 +27,15 @@ jobs:
     
     # TRAINING + LOGGING MLFLOW
     
-    - name: Run MLflow Project (Training)
+    - name: Run Training Script (CI Safe)
       env:
         MLFLOW_TRACKING_URI: https://dagshub.com/naufalwijdan14-ai/Eksperimen_SML_Muhamad-Naufal-Wijdan.mlflow
         MLFLOW_TRACKING_USERNAME: naufalwijdan14-ai
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
       run: |
-        cd MLProject
-        mlflow run . -P n_estimators=100 --env-manager local
+       cd MLProject
+       python modelling.py --n_estimators 100 --max_depth 5
+
 
     # LOGIN DOCKER HUB
   
