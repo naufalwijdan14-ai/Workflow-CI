@@ -1,61 +1,71 @@
+# -*- coding: utf-8 -*-
+import argparse
 import pandas as pd
-import mlflow
-import mlflow.sklearn
-import dagshub
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
+import joblib
+import mlflow
+import mlflow.sklearn
+import time
+from prometheus_client import start_http_server, Gauge
 
-# Konfigurasi DagsHub
-token = os.getenv("DAGSHUB_USER_TOKEN")
+# Inisialisasi Metrik Prometheus (Untuk kriteria Advanced Monitoring)
+accuracy_gauge = Gauge('model_accuracy_score', 'Akurasi dari model yang dilatih')
 
-dagshub.init(
-    repo_owner="naufalwijdan14-ai",
-    repo_name="Eksperimen_SML_Muhamad-Naufal-Wijdan",
-    mlflow=True
-)
+def train_model():
+    # Parsing argumen agar bisa menerima input path data
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_path", type=str, required=True)
+    args = parser.parse_args()
 
-if token:
-    mlflow.set_tracking_uri(f"https://dagshub.com/naufalwijdan14-ai/Eksperimen_SML_Muhamad-Naufal-Wijdan.mlflow")
+    # Load dataset
+    if not os.path.exists(args.data_path):
+        raise FileNotFoundError(f"File tidak ditemukan: {args.data_path}")
+        
+    data = pd.read_csv(args.data_path)
+    X = data.iloc[:, :-1]
+    y = data.iloc[:, -1]
 
-# Pengaturan Path Data
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Mencoba mencari file di folder preprocessing
-data_path = os.path.join(BASE_DIR, "..", "preprocessing", "titanic_preprocessing.csv")
+    # Preprocessing sederhana (Label Encoding untuk kolom teks)
+    for col in X.select_dtypes(include=['object']).columns:
+        le = LabelEncoder()
+        X[col] = le.fit_transform(X[col])
 
-if not os.path.exists(data_path):
-    # Jika gagal, coba cari di direktori yang sama
-    data_path = os.path.join(BASE_DIR, "titanic_preprocessing.csv")
+    # Split dataset
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-if not os.path.exists(data_path):
-    raise FileNotFoundError(f"File data tidak ditemukan di: {data_path}")
+    #  MLflow Tracking
+    with mlflow.start_run(run_name="Titanic_Advanced_Run"):
+        model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
+        model.fit(X_train, y_train)
 
-# Load Data
-df = pd.read_csv(data_path)
-X = df.drop("Survived", axis=1)
-y = df["Survived"]
+        y_pred = model.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
+        
+        print(f"Hasil Akurasi: {acc}")
+        
+        # Update Metrik Prometheus
+        accuracy_gauge.set(acc)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+        # Log ke MLflow Dashboard
+        mlflow.log_param("n_estimators", 100)
+        mlflow.log_metric("accuracy", acc)
+        mlflow.sklearn.log_model(model, "model")
+        
+        # Simpan file model secara fisik untuk Artifact GitHub
+        joblib.dump(model, "model.pkl")
+        print("Model tersimpan sebagai model.pkl")
 
-# MLflow Experiment
-mlflow.set_experiment("Titanic_Baseline")
-
-with mlflow.start_run(run_name="Baseline_Model"):
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
+if __name__ == "__main__":
+    # Jalankan server Prometheus di port 8000
+    start_http_server(8000)
+    print("Prometheus metrics server berjalan di port 8000")
     
-    y_pred = model.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-
-    # Log Parameter & Metric
-    mlflow.log_param("model_type", "RandomForest")
-    mlflow.log_param("n_estimators", 100)
-    mlflow.log_metric("accuracy", acc)
+    train_model()
     
-    # Log Model - ini akan membuat folder 'model' di dalam 'mlruns'
-    mlflow.sklearn.log_model(model, "model")
-
-    print(f"Model Training Selesai. Accuracy: {acc}")
+    # Memberi waktu server Prometheus agar bisa dibaca (opsional di CI)
+    print("Sinkronisasi Prometheus (5 detik)...")
+    time.sleep(5)
