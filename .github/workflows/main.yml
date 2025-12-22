@@ -28,6 +28,10 @@ jobs:
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
+          # Create DagsHub config directory and inject token directly into the client
+          mkdir -p ~/.dagshub
+          echo "{\"token\": \"${{ secrets.DAGSHUB_TOKEN }}\"}" > ~/.dagshub/tokens
+          
           cd MLProject
           mlflow run . -P n_estimators=100 --env-manager local
 
