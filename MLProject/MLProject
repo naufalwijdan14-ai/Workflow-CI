@@ -1,8 +1,6 @@
-name: Titanic_CI_Workflow
-conda_env: conda.yaml
+name: Titanic_Project
+parameters:
+  data_path: {type: str, default: "preprocessing/titanic_preprocessing.csv"}
 entry_points:
   main:
-    parameters:
-      n_estimators: {type: int, default: 100}
-      max_depth: {type: int, default: 5}
-    command: "python modelling.py {n_estimators} {max_depth}"
+    command: "python modelling.py --data_path {data_path}"
