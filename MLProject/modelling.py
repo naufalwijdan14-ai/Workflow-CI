@@ -2,6 +2,7 @@ import pandas as pd
 import mlflow
 import mlflow.sklearn
 import dagshub
+import dagshub.auth
 import os
 import sys
 from sklearn.model_selection import train_test_split
@@ -13,7 +14,8 @@ max_depth = int(sys.argv[2]) if len(sys.argv) > 2 else 5
 
 token = os.getenv('DAGSHUB_USER_TOKEN')
 if token:
-    os.environ['DAGSHUB_USER_TOKEN'] = token
+    # Memaksa token masuk ke sistem auth dagshub
+    dagshub.auth.add_app_token(token)
     os.environ['DAGSHUB_NON_INTERACTIVE'] = '1'
 
 dagshub.init(
@@ -33,7 +35,6 @@ X = df.drop("Survived", axis=1)
 y = df["Survived"]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-
 mlflow.set_experiment("Titanic_CI_Workflow")
 
 with mlflow.start_run(run_name="CI_Automated_Run"):
@@ -47,6 +48,10 @@ with mlflow.start_run(run_name="CI_Automated_Run"):
     mlflow.log_param("max_depth", max_depth)
     mlflow.log_metric("accuracy", acc)
     
-    mlflow.sklearn.log_model(model, "model", registered_model_name="Titanic_Project")
+    mlflow.sklearn.log_model(
+        sk_model=model, 
+        artifact_path="model", 
+        registered_model_name="Titanic_Project"
+    )
     
     print(f"Berhasil! Akurasi CI: {acc}")
