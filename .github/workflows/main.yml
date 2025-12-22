@@ -49,15 +49,14 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           cd MLProject
-          # Mencari lokasi folder model yang dibuat MLflow
+          # Mencari path model secara dinamis
           MODEL_PATH=$(find mlruns -name "model" -type d | head -n 1)
-          echo "Model ditemukan di: $MODEL_PATH"
           
-          # Membangun image Docker otomatis dari MLflow
+          # Gunakan variabel secret untuk nama image
           mlflow models build-docker \
             -m "$MODEL_PATH" \
             -n "${{ secrets.DOCKER_USERNAME }}/titanic-model:latest" \
             --install-mlflow
           
-          # Push ke Docker Hub
+          # Push menggunakan variabel yang sama
           docker push ${{ secrets.DOCKER_USERNAME }}/titanic-model:latest
