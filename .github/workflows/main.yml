@@ -1,4 +1,4 @@
-name: Titanic MLflow CI Advance
+name: Titanic MLflow CI/CD Advanced
 
 on:
   push:
@@ -6,50 +6,58 @@ on:
   pull_request:
 
 jobs:
-  mlflow-ci:
+  run-mlflow:
     runs-on: ubuntu-latest
 
+    env:
+     
+      DATA_PATH: MLProject/titanic_preprocessing.csv
+
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
       - name: Install dependencies
         run: |
-          pip install mlflow pandas scikit-learn joblib dagshub
+          pip install mlflow prometheus_client scikit-learn pandas joblib
 
       - name: Run MLflow Training
-        env:
-          # Menghubungkan GitHub dengan DagsHub
-          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           cd MLProject
-          python modelling.py
+          # Menggunakan SQLite lokal untuk runner ini
+          export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
+          # Menjalankan training melalui MLflow CLI
+          mlflow run . -P data_path=${{ env.DATA_PATH }} --env-manager local
 
-      - name: Login Docker Hub
+      - name: Upload Training Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: titanic-model-file
+          path: MLProject/model.pkl
+
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: naufalwijdan14
-          password: ${{ secrets.NAUFALWIJDAN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker
+      - name: Build and Push Docker Image
         run: |
           cd MLProject
-          # Mencari path model yang baru saja dibuat oleh MLflow
-          MODEL_PATH=$(find mlruns -name model -type d | head -n 1)
+          # Mencari lokasi folder model yang dibuat MLflow
+          MODEL_PATH=$(find mlruns -name "model" -type d | head -n 1)
+          echo "Model ditemukan di: $MODEL_PATH"
           
-          if [ -z "$MODEL_PATH" ]; then
-            echo "Model tidak ditemukan di mlruns!"
-            exit 1
-          fi
-
+          # Membangun image Docker otomatis dari MLflow
           mlflow models build-docker \
             -m "$MODEL_PATH" \
-            -n naufalwijdan14/titanic-model:latest \
+            -n "${{ secrets.DOCKER_USERNAME }}/titanic-model:latest" \
             --install-mlflow
-
-          docker push naufalwijdan14/titanic-model:latest
+          
+          # Push ke Docker Hub
+          docker push ${{ secrets.DOCKER_USERNAME }}/titanic-model:latest
