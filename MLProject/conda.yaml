@@ -1,6 +1,5 @@
-name: titanic_env
+name: titanic-env
 channels:
-  - defaults
   - conda-forge
 dependencies:
   - python=3.9
@@ -10,6 +9,4 @@ dependencies:
       - dagshub
       - pandas
       - scikit-learn
-      - matplotlib
-      - seaborn
       - joblib
