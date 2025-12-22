@@ -30,8 +30,9 @@ jobs:
         run: |
           cd MLProject
           export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
-          # Tambahkan -P data_path secara eksplisit
-          mlflow run . -P data_path=${{ env.DATA_PATH }} --env-manager local
+          # Gunakan nama file saja jika file ada di dalam folder MLProject
+          # Atau sesuaikan pathnya jika ada di folder lain
+          mlflow run . -P data_path="titanic_preprocessing.csv" --env-manager local
 
       - name: Upload Training Artifact
         uses: actions/upload-artifact@v4
