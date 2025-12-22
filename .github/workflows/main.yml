@@ -10,20 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
       - name: Install dependencies
         run: |
-          pip install mlflow pandas scikit-learn joblib
+          pip install mlflow pandas scikit-learn joblib dagshub
 
-      - name: Run MLflow Training (LOCAL)
+      - name: Run MLflow Training
+        env:
+          # Menghubungkan GitHub dengan DagsHub
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           cd MLProject
-          export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
           python modelling.py
 
       - name: Login Docker Hub
@@ -35,7 +39,13 @@ jobs:
       - name: Build & Push Docker
         run: |
           cd MLProject
+          # Mencari path model yang baru saja dibuat oleh MLflow
           MODEL_PATH=$(find mlruns -name model -type d | head -n 1)
+          
+          if [ -z "$MODEL_PATH" ]; then
+            echo "Model tidak ditemukan di mlruns!"
+            exit 1
+          fi
 
           mlflow models build-docker \
             -m "$MODEL_PATH" \
