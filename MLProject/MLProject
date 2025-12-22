@@ -1,0 +1,13 @@
+name: Titanic_CI_Workflow
+
+# Mengacu pada file lingkungan yang berisi daftar library
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      # Parameter ini akan dikirim ke modelling.py
+      n_estimators: {type: int, default: 100}
+      max_depth: {type: int, default: 5}
+    # Perintah yang dijalankan oleh GitHub Actions
+    command: "python modelling.py {n_estimators} {max_depth}"
