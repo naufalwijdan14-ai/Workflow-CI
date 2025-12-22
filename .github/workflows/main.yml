@@ -24,12 +24,14 @@ jobs:
 
       - name: Run Training with MLflow
         env:
-          # Pastikan kamu sudah membuat secret DAGSHUB_TOKEN di GitHub
+       
           MLFLOW_TRACKING_USERNAME: naufalwijdan14-ai
+         
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+      
           MLFLOW_TRACKING_URI: https://dagshub.com/naufalwijdan14-ai/Eksperimen_SML_Muhamad-Naufal-Wijdan.mlflow
         run: |
-          # Penting: Suntikkan token ke sistem agar DagsHub library tidak bingung
+          # Suntikkan token ke sistem file runner
           mkdir -p ~/.dagshub
           echo "{\"token\": \"${{ secrets.DAGSHUB_TOKEN }}\"}" > ~/.dagshub/tokens
           
