@@ -37,7 +37,7 @@ def train_advance_model():
     y = df["Survived"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    with mlflow.start_run(run_name="Advance_Run_Naufal_Final"):
+    with mlflow.start_run(run_name="Advance_Run_Naufal_Final", nested=True):
 
         n_est = 100
         max_d = 5
