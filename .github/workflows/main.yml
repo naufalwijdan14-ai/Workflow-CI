@@ -30,8 +30,8 @@ jobs:
       - name: Run MLflow Training
         run: |
           cd MLProject
-          export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
-          mlflow run . -P data_path="titanic_preprocessing.csv" --env-manager local
+          # Jangan gunakan 'mlflow run .', gunakan python langsung
+          python modelling.py
 
       # --- BAGIAN BARU: COMMIT ARTIFAK KE GITHUB ---
       - name: Commit and Push Model to Repo
