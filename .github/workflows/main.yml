@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install mlflow prometheus_client scikit-learn pandas joblib
+          pip install mlflow prometheus_client scikit-learn pandas joblib dagshub matplotlib seaborn
 
       - name: Run MLflow Training
         run: |
