@@ -30,7 +30,7 @@ jobs:
       - name: Run MLflow Training
         run: |
           cd MLProject
-          mlflow run .
+          mlflow run . --no-conda
           
       - name: Commit and Push Model to Repo
         run: |
