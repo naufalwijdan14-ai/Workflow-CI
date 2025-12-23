@@ -30,7 +30,8 @@ jobs:
       - name: Run MLflow Training
         run: |
           cd MLProject
-          mlflow run . --no-conda
+          # Gunakan --env-manager local sebagai pengganti --no-conda
+          mlflow run . --env-manager local
           
       - name: Commit and Push Model to Repo
         run: |
