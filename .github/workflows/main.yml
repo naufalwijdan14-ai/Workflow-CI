@@ -10,12 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-     
       DATA_PATH: MLProject/titanic_preprocessing.csv
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,11 +31,22 @@ jobs:
         run: |
           cd MLProject
           export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
-          # Gunakan nama file saja jika file ada di dalam folder MLProject
-          # Atau sesuaikan pathnya jika ada di folder lain
           mlflow run . -P data_path="titanic_preprocessing.csv" --env-manager local
 
-      - name: Upload Training Artifact
+      # --- BAGIAN BARU: COMMIT ARTIFAK KE GITHUB ---
+      - name: Commit and Push Model to Repo
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Tambahkan file .pkl 
+
+          git add MLProject/model.pkl || echo "File .pkl tidak ditemukan"
+          
+          git commit -m "Chore: Update trained model artifact (.pkl) [skip ci]" || echo "No changes to commit"
+          git push origin main
+     
+      - name: Upload Training Artifact (Internal GitHub)
         uses: actions/upload-artifact@v4
         with:
           name: titanic-model-file
@@ -49,14 +61,11 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           cd MLProject
-          # Mencari path model secara dinamis
           MODEL_PATH=$(find mlruns -name "model" -type d | head -n 1)
           
-          # Gunakan variabel secret untuk nama image
           mlflow models build-docker \
             -m "$MODEL_PATH" \
             -n "${{ secrets.DOCKER_USERNAME }}/titanic-model:latest" \
             --install-mlflow
           
-          # Push menggunakan variabel yang sama
           docker push ${{ secrets.DOCKER_USERNAME }}/titanic-model:latest
