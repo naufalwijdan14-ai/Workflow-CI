@@ -30,10 +30,8 @@ jobs:
       - name: Run MLflow Training
         run: |
           cd MLProject
-          # Jangan gunakan 'mlflow run .', gunakan python langsung
-          python modelling.py
-
-      # --- BAGIAN BARU: COMMIT ARTIFAK KE GITHUB ---
+          mlflow run .
+          
       - name: Commit and Push Model to Repo
         run: |
           git config --global user.name "github-actions[bot]"
